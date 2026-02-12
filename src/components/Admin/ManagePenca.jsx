@@ -41,9 +41,9 @@ const ManagePenca = ({ penca, onBack }) => {
       return;
     }
 
-    // Validate file size (max 500KB)
-    if (file.size > 500000) {
-      alert('⚠️ La imagen debe pesar menos de 500KB. Reduce el tamaño o usa una URL.');
+    // Validate file size (max 150KB)
+    if (file.size > 150000) {
+      alert('⚠️ La imagen debe pesar menos de 150KB. Reduce el tamaño o la calidad de la imagen.');
       return;
     }
 
@@ -978,7 +978,7 @@ const ManagePenca = ({ penca, onBack }) => {
                     style={{ display: 'none' }}
                   />
                   <small className="text-secondary" style={{ display: 'block', marginTop: '5px' }}>
-                    💾 Máximo 500KB
+                    💾 Máximo 150KB
                   </small>
                 </div>
 

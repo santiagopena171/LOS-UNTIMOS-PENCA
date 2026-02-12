@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ref, get, set } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { ArrowLeft, Trophy, Calendar, TrendingUp, Edit2, Check } from 'lucide-react';
+import { cache, getCacheKey } from '../../utils/cache';
+import LazyImage from '../LazyImage';
 
 const ViewPenca = ({ penca, onBack }) => {
   const { currentUser } = useAuth();
@@ -28,7 +30,7 @@ const ViewPenca = ({ penca, onBack }) => {
 
   const loadData = async () => {
     try {
-      // Load matches
+      // Load matches (datos que cambian, no cachear)
       if (penca.matches) {
         const matchesArray = Object.entries(penca.matches).map(([id, match]) => ({
           id,
@@ -37,26 +39,40 @@ const ViewPenca = ({ penca, onBack }) => {
         setMatches(matchesArray);
       }
 
-      // Load teams
+      // Load teams (datos estáticos, cachear)
       if (penca.teams) {
         setTeams(penca.teams);
+        cache.set(getCacheKey('teams', penca.id), penca.teams);
       }
 
-      // Load matchdays
+      // Load matchdays (datos estáticos, cachear)
       if (penca.matchdays) {
         setMatchdays(penca.matchdays);
+        cache.set(getCacheKey('matchdays', penca.id), penca.matchdays);
       }
 
-      // Load divisionals
+      // Load divisionals (datos estáticos, cachear)
       if (penca.divisionals) {
         setDivisionals(penca.divisionals);
+        cache.set(getCacheKey('divisionals', penca.id), penca.divisionals);
       }
 
-      // Load user predictions
-      const predictionsRef = ref(database, `predictions/${penca.id}/${currentUser.uid}`);
-      const predictionsSnapshot = await get(predictionsRef);
-      if (predictionsSnapshot.exists()) {
-        setPredictions(predictionsSnapshot.val());
+      // Load user predictions con caché
+      const cacheKey = getCacheKey('predictions', `${penca.id}_${currentUser.uid}`);
+      const cachedPredictions = cache.get(cacheKey);
+      
+      if (cachedPredictions) {
+        console.log('📦 Using cached predictions');
+        setPredictions(cachedPredictions);
+      } else {
+        console.log('📥 Downloading predictions from Firebase');
+        const predictionsRef = ref(database, `predictions/${penca.id}/${currentUser.uid}`);
+        const predictionsSnapshot = await get(predictionsRef);
+        if (predictionsSnapshot.exists()) {
+          const data = predictionsSnapshot.val();
+          setPredictions(data);
+          cache.set(cacheKey, data);
+        }
       }
 
       // Calculate standings
@@ -217,13 +233,19 @@ const ViewPenca = ({ penca, onBack }) => {
         predictedAt: Date.now()
       });
 
-      setPredictions({
+      const updatedPredictions = {
         ...predictions,
         [editingMatch.id]: {
           homeScore: parseInt(predictionForm.homeScore),
           awayScore: parseInt(predictionForm.awayScore)
         }
-      });
+      };
+      
+      setPredictions(updatedPredictions);
+      
+      // Actualizar caché con nueva predicción
+      const cacheKey = getCacheKey('predictions', `${penca.id}_${currentUser.uid}`);
+      cache.set(cacheKey, updatedPredictions);
 
       setEditingMatch(null);
       setPredictionForm({ homeScore: '', awayScore: '' });
@@ -340,7 +362,7 @@ const ViewPenca = ({ penca, onBack }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
                       <div style={{ flex: 1, textAlign: 'center' }}>
                         {getTeamLogo(viewingMatchPredictions.homeTeam) && (
-                          <img src={getTeamLogo(viewingMatchPredictions.homeTeam)} alt="" style={{ width: '60px', height: '60px', marginBottom: '10px' }} />
+                          <LazyImage src={getTeamLogo(viewingMatchPredictions.homeTeam)} alt="" style={{ width: '60px', height: '60px', marginBottom: '10px' }} />
                         )}
                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{getTeamName(viewingMatchPredictions.homeTeam)}</div>
                       </div>
@@ -360,7 +382,7 @@ const ViewPenca = ({ penca, onBack }) => {
 
                       <div style={{ flex: 1, textAlign: 'center' }}>
                         {getTeamLogo(viewingMatchPredictions.awayTeam) && (
-                          <img src={getTeamLogo(viewingMatchPredictions.awayTeam)} alt="" style={{ width: '60px', height: '60px', marginBottom: '10px' }} />
+                          <LazyImage src={getTeamLogo(viewingMatchPredictions.awayTeam)} alt="" style={{ width: '60px', height: '60px', marginBottom: '10px' }} />
                         )}
                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{getTeamName(viewingMatchPredictions.awayTeam)}</div>
                       </div>
@@ -560,7 +582,7 @@ const ViewPenca = ({ penca, onBack }) => {
                       <div className="match-teams-user">
                         <div className="team-user">
                           {getTeamLogo(match.homeTeam) && (
-                            <img src={getTeamLogo(match.homeTeam)} alt="" className="team-logo-user" />
+                            <LazyImage src={getTeamLogo(match.homeTeam)} alt="" className="team-logo-user" />
                           )}
                           <div className="team-info">
                             <span className="team-name">{getTeamName(match.homeTeam)}</span>
@@ -580,7 +602,7 @@ const ViewPenca = ({ penca, onBack }) => {
                             )}
                           </div>
                           {getTeamLogo(match.awayTeam) && (
-                            <img src={getTeamLogo(match.awayTeam)} alt="" className="team-logo-user" />
+                            <LazyImage src={getTeamLogo(match.awayTeam)} alt="" className="team-logo-user" />
                           )}
                         </div>
                       </div>
@@ -729,7 +751,7 @@ const ViewPenca = ({ penca, onBack }) => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' }}>
                               <div style={{ flex: 1, textAlign: 'center' }}>
                                 {getTeamLogo(match.homeTeam) && (
-                                  <img src={getTeamLogo(match.homeTeam)} alt="" style={{ width: '40px', height: '40px', marginBottom: '5px' }} />
+                                  <LazyImage src={getTeamLogo(match.homeTeam)} alt="" style={{ width: '40px', height: '40px', marginBottom: '5px' }} />
                                 )}
                                 <div style={{ fontWeight: '500' }}>{getTeamName(match.homeTeam)}</div>
                               </div>
@@ -758,7 +780,7 @@ const ViewPenca = ({ penca, onBack }) => {
 
                               <div style={{ flex: 1, textAlign: 'center' }}>
                                 {getTeamLogo(match.awayTeam) && (
-                                  <img src={getTeamLogo(match.awayTeam)} alt="" style={{ width: '40px', height: '40px', marginBottom: '5px' }} />
+                                  <LazyImage src={getTeamLogo(match.awayTeam)} alt="" style={{ width: '40px', height: '40px', marginBottom: '5px' }} />
                                 )}
                                 <div style={{ fontWeight: '500' }}>{getTeamName(match.awayTeam)}</div>
                               </div>
@@ -812,7 +834,7 @@ const ViewPenca = ({ penca, onBack }) => {
             <div className="prediction-match-info">
               <div className="prediction-team">
                 {getTeamLogo(editingMatch.homeTeam) && (
-                  <img src={getTeamLogo(editingMatch.homeTeam)} alt="" />
+                  <LazyImage src={getTeamLogo(editingMatch.homeTeam)} alt="" />
                 )}
                 <span>{getTeamName(editingMatch.homeTeam)}</span>
               </div>
@@ -840,7 +862,7 @@ const ViewPenca = ({ penca, onBack }) => {
               
               <div className="prediction-team prediction-team-right">
                 {getTeamLogo(editingMatch.awayTeam) && (
-                  <img src={getTeamLogo(editingMatch.awayTeam)} alt="" />
+                  <LazyImage src={getTeamLogo(editingMatch.awayTeam)} alt="" />
                 )}
                 <span>{getTeamName(editingMatch.awayTeam)}</span>
               </div>

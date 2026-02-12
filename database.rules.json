@@ -1,0 +1,157 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "$uid === auth.uid",
+        ".validate": "newData.hasChildren(['username', 'displayName', 'role', 'createdAt'])",
+        "username": {
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 30"
+        },
+        "displayName": {
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 50"
+        },
+        "role": {
+          ".validate": "newData.val() === 'user' || newData.val() === 'admin'"
+        }
+      }
+    },
+    
+    "usernames": {
+      "$username": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.isString()"
+      }
+    },
+    
+    "pencas": {
+      ".read": "auth != null",
+      ".indexOn": ["adminId", "createdAt", "status"],
+      
+      "$pencaId": {
+        ".write": "!data.exists() && auth != null || data.child('adminId').val() === auth.uid",
+        ".validate": "newData.hasChildren(['name', 'adminId', 'status'])",
+        
+        "adminId": {
+          ".validate": "newData.val() === auth.uid"
+        },
+        
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 100"
+        },
+        
+        "description": {
+          ".validate": "newData.isString() && newData.val().length <= 500"
+        },
+        
+        "status": {
+          ".validate": "newData.val() === 'active' || newData.val() === 'inactive' || newData.val() === 'finished'"
+        },
+        
+        "pointsPerExactScore": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        
+        "pointsPerDifference": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        
+        "pointsPerWinner": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        
+        "teams": {
+          "$teamId": {
+            ".validate": "newData.hasChildren(['name'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+            },
+            "logo": {
+              ".validate": "newData.isString() && newData.val().length <= 700000"
+            }
+          }
+        },
+        
+        "divisionals": {
+          "$divisionalId": {
+            ".validate": "newData.hasChildren(['name'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+            }
+          }
+        },
+        
+        "matchdays": {
+          "$matchdayId": {
+            ".validate": "newData.hasChildren(['number'])",
+            "number": {
+              ".validate": "newData.isNumber() && newData.val() >= 1"
+            }
+          }
+        },
+        
+        "matches": {
+          "$matchId": {
+            ".validate": "newData.hasChildren(['homeTeam', 'awayTeam', 'date', 'status'])",
+            "status": {
+              ".validate": "newData.val() === 'scheduled' || newData.val() === 'live' || newData.val() === 'finished'"
+            },
+            "homeScore": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "awayScore": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            }
+          }
+        },
+        
+        "participants": {
+          "$userId": {
+            ".read": "auth != null",
+            ".write": "data.parent().parent().child('adminId').val() === auth.uid || $userId === auth.uid",
+            ".validate": "newData.hasChildren(['displayName', 'username', 'joinedAt'])",
+            "points": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            }
+          }
+        },
+        
+        "pendingRequests": {
+          "$userId": {
+            ".read": "auth != null && (data.parent().parent().child('adminId').val() === auth.uid || $userId === auth.uid)",
+            ".write": "auth != null && ($userId === auth.uid || data.parent().parent().child('adminId').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['displayName', 'username', 'requestedAt', 'status'])",
+            "status": {
+              ".validate": "newData.val() === 'pending' || newData.val() === 'approved' || newData.val() === 'rejected'"
+            }
+          }
+        }
+      }
+    },
+    
+    "predictions": {
+      ".indexOn": ["predictedAt"],
+      
+      "$pencaId": {
+        "$userId": {
+          ".read": "auth != null",
+          
+          "$matchId": {
+            ".write": "auth != null && $userId === auth.uid && root.child('pencas').child($pencaId).child('matches').child($matchId).child('status').val() === 'scheduled'",
+            ".validate": "newData.hasChildren(['homeScore', 'awayScore', 'predictedAt'])",
+            "homeScore": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            },
+            "awayScore": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            },
+            "predictedAt": {
+              ".validate": "newData.isNumber()"
+            }
+          }
+        }
+      }
+    }
+  }
+}
