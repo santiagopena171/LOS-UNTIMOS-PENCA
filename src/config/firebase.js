@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB278dfq5JrGOzp8-h4cby1PrKfJBifFwY",
-  authDomain: "pencas-futsal.firebaseapp.com",
-  projectId: "pencas-futsal",
-  storageBucket: "pencas-futsal.firebasestorage.app",
-  messagingSenderId: "701017979724",
-  appId: "1:701017979724:web:592b9ad07d581c83edede9",
-  databaseURL: "https://pencas-futsal-default-rtdb.firebaseio.com"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL
 };
 
 // Initialize Firebase
