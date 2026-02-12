@@ -8,7 +8,6 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,8 +39,8 @@ const Login = () => {
           setLoading(false);
           return;
         }
-        console.log('Registrando usuario con rol:', role);
-        await signup(username, password, displayName, role);
+        console.log('Registrando usuario con rol: user');
+        await signup(username, password, displayName, 'user');
       }
     } catch (error) {
       console.error(error);
@@ -145,27 +144,6 @@ const Login = () => {
               </button>
             </div>
           </div>
-
-          {!isLogin && (
-            <div className="form-group">
-              <label>Tipo de cuenta</label>
-              <select 
-                value={role} 
-                onChange={(e) => {
-                  console.log('Rol seleccionado cambiado a:', e.target.value);
-                  setRole(e.target.value);
-                }}
-              >
-                <option value="user">Usuario</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <small className="text-secondary">
-                {role === 'admin' 
-                  ? 'Podrás crear y gestionar pencas' 
-                  : 'Podrás unirte a pencas y hacer predicciones'}
-              </small>
-            </div>
-          )}
 
           <button 
             type="submit" 
